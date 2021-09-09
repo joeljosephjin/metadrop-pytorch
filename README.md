@@ -13,3 +13,5 @@ To Run:
 | ------| ---------------- | ---------------- |
 | MAML | 95.23          | 96.76 |
 | Meta-dropout | __96.63__ | __97.12__ |
+
+See the [runs](https://wandb.ai/joeljosephjin/metadrop-pytorch) and [report](https://wandb.ai/joeljosephjin/metadrop-pytorch/reports/Metadrop-in-PyTorch-An-Evaluation--Vmlldzo5OTQwMjg) on the results.
