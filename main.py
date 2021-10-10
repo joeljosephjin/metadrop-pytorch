@@ -49,9 +49,7 @@ def getBack(var_grad_fn):
             try:
                 tensor = getattr(n[0], 'variable')
                 print(n[0])
-                # print('Tensor with grad found:', tensor)
                 print('Tensor with grad found:')
-                # print(' - gradient:', tensor.grad)
                 print(' - gradient:')
                 print()
             except AttributeError as e:
@@ -94,7 +92,6 @@ def train_and_evaluate(models,
             adapted_params = model.cloned_state_dict()
             if args.phi:
                 phi_adapted_params = phi_net.cloned_state_dict()
-                # import sys; sys.exit(0)
 
             for _ in range(0, args.num_train_updates):
                 if args.phi:
@@ -106,7 +103,6 @@ def train_and_evaluate(models,
                 grads = torch.autograd.grad(loss, adapted_params.values(), create_graph=True)
                 for (key, val), grad in zip(adapted_params.items(), grads):
                     adapted_params[key] = val - task_lr * grad
-                    # adapted_state_dict[key] = adapted_params[key]
 
             dl_meta = dataloaders['meta']
             X_meta, Y_meta = dl_meta.__iter__().next()
@@ -120,10 +116,6 @@ def train_and_evaluate(models,
             accs.append(accuracy(Y_meta_hat.data.cpu().numpy(), Y_meta.data.cpu().numpy()))
             loss_t = loss_fn(Y_meta_hat, Y_meta)
 
-            # getBack(loss_t.grad_fn)
-            # grad = torch.autograd.grad(loss_t, phi_adapted_params.values(), allow_unused=True)
-            # print(grad)
-            # import sys; sys.exit(0)
             meta_loss += loss_t
             
         meta_loss /= float(num_inner_tasks)
@@ -134,20 +126,8 @@ def train_and_evaluate(models,
         meta_loss.backward()
         meta_optimizer.step()
 
-        # if (episode + 1) % args.save_summary_steps == 0:
-        #     for name, param in phi_net.named_parameters():
-        #         if param.requires_grad:
-        #             print(name, param.data[0][0][0])
-        #             break
-
         if args.phi:
             phi_optimizer.step()
-
-        # if (episode + 1) % args.save_summary_steps == 0:
-        #     for name, param in phi_net.named_parameters():
-        #         if param.requires_grad:
-        #             print(name, param.data[0][0][0])
-        #             break
 
         # Evaluate model on new task
         # Evaluate on train and test dataset given a number of tasks (args.num_steps)

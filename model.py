@@ -15,41 +15,21 @@ EPS = 1e-8  # epsilon for numerical stability
 softplus = torch.nn.Softplus()
 
 
-
-def getBack(var_grad_fn):
-    print(var_grad_fn)
-    for n in var_grad_fn.next_functions:
-        if n[0]:
-            try:
-                tensor = getattr(n[0], 'variable')
-                print(n[0])
-                # print('Tensor with grad found:', tensor)
-                print('Tensor with grad found:')
-                # print(' - gradient:', tensor.grad)
-                print(' - gradient:')
-                print()
-            except AttributeError as e:
-                getBack(n[0])
-
 class MetaLearner(nn.Module):
     def __init__(self, args):
         super(MetaLearner, self).__init__()
         self.args = args
         self.meta_learner = Net(
             args.in_channels, args.num_classes, dataset=args.dataset)
-        # self.phi_net = phiNet(
-        #     args.in_channels, args.num_classes, dataset=args.dataset)
 
     def forward(self, X, adapted_params=None, phi_adapted_params=None):
         out = self.meta_learner(X, adapted_params, phi_adapted_params)
         return out
 
     def cloned_state_dict(self):
-        # adapted_state_dict = {key: val.clone() for key, val in self.state_dict().items()}
         adapted_params = OrderedDict()
         for key, val in self.named_parameters():
             adapted_params[key] = val
-            # adapted_state_dict[key] = adapted_params[key]
 
         return adapted_params
 
@@ -87,8 +67,6 @@ class Net(nn.Module):
                     out,
                     self.state_dict()['features.%d.bn%d.running_mean'%(i,i)],
                     self.state_dict()['features.%d.bn%d.running_var'%(i,i)],
-                    # params['meta_learner.features.%d.bn%d.running_mean'%(i,i)],
-                    # params['meta_learner.features.%d.bn%d.running_var'%(i,i)],
                     params['meta_learner.features.%d.bn%d.weight'%(i,i)],
                     params['meta_learner.features.%d.bn%d.bias'%(i,i)],
                     momentum=1,
@@ -116,14 +94,10 @@ class Net(nn.Module):
                 # mult_noise = Normal(alpha, ones).sample()
                 mult_noise = alpha
                 out = mu * softplus(mult_noise)
-                # getBack(out[0][0][0].grad_fn)
-                # import sys; sys.exit(0)
                 out = F.batch_norm(
                     out,
                     self.state_dict()['features.%d.bn%d.running_mean'%(i,i)],
                     self.state_dict()['features.%d.bn%d.running_var'%(i,i)],
-                    # params['meta_learner.features.%d.bn%d.running_mean'%(i,i)],
-                    # params['meta_learner.features.%d.bn%d.running_var'%(i,i)],
                     params['meta_learner.features.%d.bn%d.weight'%(i,i)],
                     params['meta_learner.features.%d.bn%d.bias'%(i,i)],
                     momentum=1,
@@ -155,11 +129,9 @@ class phiNet(nn.Module):
             self.add_module('fc', nn.Linear(64 * 5 * 5, num_classes))
 
     def cloned_state_dict(self):
-        # adapted_state_dict = {key: val.clone() for key, val in self.state_dict().items()}
         adapted_params = OrderedDict()
         for key, val in self.named_parameters():
             adapted_params[key] = val
-            # adapted_state_dict[key] = adapted_params[key]
 
         return adapted_params
 
