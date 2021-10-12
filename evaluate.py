@@ -62,7 +62,6 @@ def evaluate(models, loss_fn, meta_classes, task_lr, task_type, args,
             grads = torch.autograd.grad(loss, adapted_params.values(), create_graph=True)
             for (key, val), grad in zip(adapted_params.items(), grads):
                 adapted_params[key] = val - task_lr * grad
-                # adapted_state_dict[key] = adapted_params[key]
 
         # Y_que_hat = model(X_que)
 

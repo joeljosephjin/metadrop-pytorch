@@ -42,19 +42,6 @@ parser.add_argument('--phi',default=False, action="store_true")
 parser.add_argument('--wandb',default=False, action="store_true")
 
 
-def getBack(var_grad_fn):
-    print(var_grad_fn)
-    for n in var_grad_fn.next_functions:
-        if n[0]:
-            try:
-                tensor = getattr(n[0], 'variable')
-                print(n[0])
-                print('Tensor with grad found:')
-                print(' - gradient:')
-                print()
-            except AttributeError as e:
-                getBack(n[0])
-
 def train_and_evaluate(models,
                        meta_train_classes,
                        meta_test_classes,
