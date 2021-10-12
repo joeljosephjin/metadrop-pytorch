@@ -17,7 +17,6 @@ from evaluate import accuracy
 
 import numpy as np
 
-import wandb
 from time import time
 
 
@@ -40,6 +39,7 @@ parser.add_argument('--num_eval_updates',default=1, type=int)
 parser.add_argument('--save_summary_steps',default=100, type=int)
 parser.add_argument('--num_workers',default=1, type=int)
 parser.add_argument('--phi',default=False, action="store_true")
+parser.add_argument('--wandb',default=False, action="store_true")
 
 
 def getBack(var_grad_fn):
@@ -62,7 +62,8 @@ def train_and_evaluate(models,
                        meta_optimizer,
                        loss_fn,
                        args):
-    wandb.init(project='metadrop-pytorch', entity='joeljosephjin', config=vars(args))
+    if args.wandb:
+        wandb.init(project='metadrop-pytorch', entity='joeljosephjin', config=vars(args))
 
     model = models['model']
     if args.phi:
@@ -139,14 +140,19 @@ def train_and_evaluate(models,
                                     task_lr, task_type, args,
                                     'test')
 
-            wandb.log({"episode":episode, "test_acc":test_acc, "train_acc":train_acc,\
-                        "test_loss":test_loss,"train_loss":train_loss})
+            if args.wandb:
+                wandb.log({"episode":episode, "test_acc":test_acc, "train_acc":train_acc,\
+                            "test_loss":test_loss,"train_loss":train_loss})
             print('episode: {:0.2f}, acc: {:0.2f}, test_acc: {:0.2f}, train_acc: {:0.2f}, time: {:0.2f}, test_loss: {:0.2f}, train_loss: {:0.2f}'\
                     .format(episode, np.mean(accs), test_acc, train_acc, time()-start_time, test_loss, train_loss))
             start_time = time()
 
 if __name__ == '__main__':
     args = parser.parse_args()
+
+    if args.wandb:
+        import wandb
+
 
     args.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
