@@ -39,8 +39,21 @@ from data import Data
 
 data = Data(args)
 
-episode = data.generate_episode(args, meta_training=True,
-        n_episodes=args.metabatch)
+#old model
+for episode in range(10): # i'm assuming each episode carries a single new task
+    data_episode = data.generate_episode(args, meta_training=True, n_episodes=args.metabatch)
+    xtr, ytr, xte, yte = data_episode
+    print(len(xtr))
+    # for loop of map (16 iters?)
+    # for n_steps range(5):
+        # print()
 
-print(len(episode)) # xtr, ytr, xte, yte
+# new model
+for episode in range(10):
+    for n_task in range(5):
+        pass
+        # dataloader_task = ...
+
+
+
 
