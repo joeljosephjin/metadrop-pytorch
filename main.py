@@ -19,6 +19,7 @@ import numpy as np
 
 from time import time
 
+from data_haebom.data import Data
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir',default='data/Omniglot',help="Directory containing the dataset")
@@ -65,17 +66,30 @@ def train_and_evaluate(models,
     task_lr = args.task_lr
     start_time = 0
 
+    data = Data(args)
+
     for episode in range(args.num_episodes):
         # Run inner loops to get adapted parameters (theta_t`)
+        data_episode = data.generate_episode(args, meta_training=True, n_episodes=num_inner_tasks)
         meta_loss = 0
         accs = []
+        xtr, ytr, xte, yte = data_episode
         for n_task in range(num_inner_tasks):
-            task = task_type(meta_train_classes, num_classes, num_samples, num_query)
-            dataloaders = fetch_dataloaders(['train', 'test', 'meta'], task)
+            # task = task_type(meta_train_classes, num_classes, num_samples, num_query)
+            # dataloaders = fetch_dataloaders(['train', 'test', 'meta'], task)
 
-            dl_sup = dataloaders['train']
-            X_sup, Y_sup = dl_sup.__iter__().next()
-            X_sup, Y_sup = X_sup.to(args.device), Y_sup.to(args.device)
+            # dl_sup = dataloaders['train']
+            # X_sup, Y_sup = dl_sup.__iter__().next()
+            # print(X_sup.shape) # [5, 1, 28, 28]
+            # import sys; sys.exit()
+
+            xtri, ytri, xtei, ytei = xtr[n_task], ytr[n_task], xte[n_task], yte[n_task]
+            X_sup, Y_sup = xtri, ytri
+            # print(X_sup.shape)
+            X_sup, Y_sup = X_sup.reshape([-1, 1, 28, 28]).to(args.device), Y_sup.to(args.device) # [5, 784]
+            # X_sup, Y_sup = torch.reshape(X_sup, [-1, 28, 28, 1]), torch.reshape(X_sup, [-1, 28, 28, 1])
+            # print(X_sup.shape)
+            # import sys; sys.exit()
 
             adapted_params = model.cloned_state_dict()
             if args.phi:
@@ -86,6 +100,9 @@ def train_and_evaluate(models,
                     Y_sup_hat = model(X_sup, adapted_params, phi_adapted_params)
                 else:
                     Y_sup_hat = model(X_sup, adapted_params)
+                print(Y_sup_hat.shape)
+                print(Y_sup.shape)
+                # import sys; sys.exit()
                 loss = loss_fn(Y_sup_hat, Y_sup)
 
                 grads = torch.autograd.grad(loss, adapted_params.values(), create_graph=True)

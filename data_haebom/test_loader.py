@@ -31,8 +31,8 @@ parser.add_argument('--n_steps', type=int, default=5,
     help='number of inner-gradient steps')
 parser.add_argument('--n_test_mc_samp', type=int, default=1,
     help='number of MC samples to evaluate the expected inner-step loss')
-parser.add_argument('--maml', action='store_true', default=False,
-    help='whether to convert this model back to the base MAML or not')
+# parser.add_argument('--maml', action='store_true', default=False,
+#     help='whether to convert this model back to the base MAML or not')
 args = parser.parse_args()
 
 from data import Data
@@ -41,16 +41,18 @@ data = Data(args)
 
 #old model
 for episode in range(10): # i'm assuming each episode carries a single new task
-    data_episode = data.generate_episode(args, meta_training=True, n_episodes=args.metabatch)
+    data_episode = data.generate_episode(args, meta_training=True, n_episodes=args.metabatch) # 16 tasks each time
     xtr, ytr, xte, yte = data_episode
-    print(len(xtr))
-    # for loop of map (16 iters?)
-    # for n_steps range(5):
-        # print()
+    for n_task in range(16):
+        xtri, ytri, xtei, ytei = xtr[n_task], ytr[n_task], xte[n_task], yte[n_task]
+        X_sup, Y_sup = xtri, ytri
+        # print(xtri)
+        break
+
 
 # new model
 for episode in range(10):
-    for n_task in range(5):
+    for n_task in range(16):
         pass
         # dataloader_task = ...
 

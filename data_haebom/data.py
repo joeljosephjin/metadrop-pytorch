@@ -1,8 +1,9 @@
 import numpy as np
+from torch import tensor
 
 class Data:
   def __init__(self, args):
-    if args.dataset == 'omniglot':
+    if args.dataset == 'Omniglot':
       self.N = 20 # total num instances per class
       self.K_mtr = 4800 # total num meta_train classes
       self.K_mte = 1692 # total num meta_test classes
@@ -26,7 +27,7 @@ class Data:
 
   def generate_episode(self, args, meta_training=True, n_episodes=1, classes=None):
     generate_label = lambda way, n_samp: np.repeat(np.eye(way), n_samp, axis=0)
-    n_way, n_shot, n_query = args.way, args.shot, args.query
+    n_way, n_shot, n_query = args.num_classes, args.num_samples, args.num_query
     (K,x) = (self.K_mtr, self.x_mtr) if meta_training else (self.K_mte, self.x_mte)
 
     xtr, ytr, xte, yte = [], [], [], []
@@ -49,6 +50,7 @@ class Data:
       ytr.append(generate_label(n_way, n_shot))
       yte.append(generate_label(n_way, n_query))
 
-    xtr, ytr = np.stack(xtr, 0), np.stack(ytr, 0)
-    xte, yte = np.stack(xte, 0), np.stack(yte, 0)
+    xtr, ytr = tensor(np.stack(xtr, 0)), tensor(np.stack(ytr, 0))
+    xte, yte = tensor(np.stack(xte, 0)), tensor(np.stack(yte, 0))
     return [xtr, ytr, xte, yte]
+
