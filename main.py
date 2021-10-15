@@ -77,19 +77,12 @@ def train_and_evaluate(models,
         for n_task in range(num_inner_tasks):
             # task = task_type(meta_train_classes, num_classes, num_samples, num_query)
             # dataloaders = fetch_dataloaders(['train', 'test', 'meta'], task)
-
             # dl_sup = dataloaders['train']
             # X_sup, Y_sup = dl_sup.__iter__().next()
-            # print(X_sup.shape) # [5, 1, 28, 28]
-            # import sys; sys.exit()
 
             xtri, ytri, xtei, ytei = xtr[n_task], ytr[n_task], xte[n_task], yte[n_task]
             X_sup, Y_sup = xtri, ytri
-            # print(X_sup.shape)
             X_sup, Y_sup = X_sup.reshape([-1, 1, 28, 28]).to(args.device), Y_sup.to(args.device) # [5, 784]
-            # X_sup, Y_sup = torch.reshape(X_sup, [-1, 28, 28, 1]), torch.reshape(X_sup, [-1, 28, 28, 1])
-            # print(X_sup.shape)
-            # import sys; sys.exit()
 
             adapted_params = model.cloned_state_dict()
             if args.phi:
@@ -100,18 +93,18 @@ def train_and_evaluate(models,
                     Y_sup_hat = model(X_sup, adapted_params, phi_adapted_params)
                 else:
                     Y_sup_hat = model(X_sup, adapted_params)
-                print(Y_sup_hat.shape)
-                print(Y_sup.shape)
-                # import sys; sys.exit()
-                loss = loss_fn(Y_sup_hat, Y_sup)
+                loss = loss_fn(Y_sup_hat, torch.argmax(Y_sup, dim=1))
 
                 grads = torch.autograd.grad(loss, adapted_params.values(), create_graph=True)
                 for (key, val), grad in zip(adapted_params.items(), grads):
                     adapted_params[key] = val - task_lr * grad
 
-            dl_meta = dataloaders['meta']
-            X_meta, Y_meta = dl_meta.__iter__().next()
-            X_meta, Y_meta = X_meta.to(args.device), Y_meta.to(args.device)
+            # dl_meta = dataloaders['meta']
+            # X_meta, Y_meta = dl_meta.__iter__().next()
+            # X_meta, Y_meta = X_meta.to(args.device), Y_meta.to(args.device)
+
+            X_meta, Y_meta = xtei, ytei
+            X_meta, Y_meta = X_meta.reshape([-1, 1, 28, 28]).to(args.device), Y_meta.to(args.device) # [5, 784]
 
             if args.phi:
                 Y_meta_hat = model(X_meta, adapted_params, phi_adapted_params)
@@ -119,7 +112,7 @@ def train_and_evaluate(models,
                 Y_meta_hat = model(X_meta, adapted_params)
 
             accs.append(accuracy(Y_meta_hat.data.cpu().numpy(), Y_meta.data.cpu().numpy()))
-            loss_t = loss_fn(Y_meta_hat, Y_meta)
+            loss_t = loss_fn(Y_meta_hat, torch.argmax(Y_meta, dim=1))
 
             meta_loss += loss_t
             
