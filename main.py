@@ -111,7 +111,7 @@ def train_and_evaluate(models,
             else:
                 Y_meta_hat = model(X_meta, adapted_params)
 
-            accs.append(accuracy(Y_meta_hat.data.cpu().numpy(), Y_meta.data.cpu().numpy()))
+            accs.append(accuracy(Y_meta_hat.data.cpu().numpy(), torch.argmax(Y_meta, dim=1).data.cpu().numpy()))
             loss_t = loss_fn(Y_meta_hat, torch.argmax(Y_meta, dim=1))
 
             meta_loss += loss_t
