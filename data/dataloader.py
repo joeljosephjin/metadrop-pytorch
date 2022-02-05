@@ -1,5 +1,3 @@
-# Code is based on https://github.com/floodsung/LearningToCompare_FSL
-# TODO tieredImageNet
 import random
 import os
 import zipfile
@@ -21,18 +19,6 @@ eval_transformer_Omniglot = transforms.Compose(
     [transforms.Resize((28, 28)),
      transforms.ToTensor()])
 
-# Define a training image loader for ImageNet (miniImageNet, tieredImageNet)
-train_transformer_ImageNet = transforms.Compose([
-    transforms.Resize((84, 84)),
-    # transforms.RandomRotation([0, 90, 180, 270]),
-    transforms.ToTensor()
-])
-
-# Define a evaluation loader, no random rotation.
-eval_transformer_ImageNet = transforms.Compose(
-    [transforms.Resize((84, 84)),
-     transforms.ToTensor()])
-
 
 def split_omniglot_characters(data_dir, SEED):
     if not os.path.exists(data_dir):
@@ -47,46 +33,10 @@ def split_omniglot_characters(data_dir, SEED):
     random.seed(SEED)
     random.shuffle(character_folders)
 
-    # TODO consider validation set
-    # test_ratio = 0.2  # against total data
-    # val_ratio = 0.2  # against train data
-    # num_total = len(character_folders)
-    # num_test = int(num_total * test_ratio)
-    # num_val = int((num_total - num_test) * val_ratio)
-    # num_train = num_total - num_test - num_val
-
-    # train_chars = character_folders[:num_train]
-    # val_chars = character_folders[num_train:num_train + num_val]
-    # test_chars = character_folders[-num_test:]
-    # return train_chars, val_chars, test_chars
-
     num_train = 1200
     train_chars = character_folders[:num_train]
     test_chars = character_folders[num_train:]
     return train_chars, test_chars
-
-
-def load_imagenet_images(data_dir):
-    """
-    The datasets for miniImageNet and tieredImageNet are already splited into
-    train/val/test. The method returns the lists of paths of classes as the 
-    method for omniglot does.
-    TODO validation
-    """
-    if not os.path.exists(data_dir):
-        raise Exception("ImageNet data folder does not exist.")
-
-    train_classes = [os.path.join(data_dir, 'train', family)\
-                    for family in os.listdir(os.path.join(data_dir, 'train')) \
-                    if os.path.isdir((os.path.join(data_dir, 'train', family)))]
-    train_classes += [os.path.join(data_dir, 'val', family)\
-                     for family in os.listdir(os.path.join(data_dir, 'val')) \
-                     if os.path.isdir((os.path.join(data_dir, family)))]
-    test_classes = [os.path.join(data_dir, 'test', family)\
-                   for family in os.listdir(os.path.join(data_dir, 'test')) \
-                   if os.path.isdir((os.path.join(data_dir, 'test', family)))]
-
-    return train_classes, test_classes
 
 
 class Task(object):
@@ -148,15 +98,6 @@ class OmniglotTask(Task):
 
     def __init__(self, *args, **kwargs):
         super(OmniglotTask, self).__init__(*args, **kwargs)
-
-
-class ImageNetTask(Task):
-    """
-    Class for defining a single few-shot task given ImageNet dataset.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super(ImageNetTask, self).__init__(*args, **kwargs)
 
 
 class FewShotDataset(Dataset):
@@ -244,9 +185,7 @@ def fetch_dataloaders(types, task):
                                    train_transformer),
                     batch_size=len(meta_filenames),  # full-batch in episode
                     shuffle=True)  # TODO args: num_workers, pin_memory
-            else:
-                # TODO
-                raise NotImplementedError()
+
             dataloaders[split] = dl
 
     return dataloaders

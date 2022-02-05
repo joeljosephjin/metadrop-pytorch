@@ -13,18 +13,6 @@ class Data:
       self.x_mtr = np.reshape(x_mtr, [4800,20,28*28*1])
       self.x_mte = np.reshape(x_mte, [1692,20,28*28*1])
 
-    elif args.dataset == 'mimgnet':
-      self.N = 600 # total num instances per class
-      self.K_mtr = 64 # total num meta_train classes
-      self.K_mte = 20 # total num meta_test classes
-
-      x_mtr = np.load('./data/mimgnet/train.npy')
-      x_mte = np.load('./data/mimgnet/test.npy')
-      self.x_mtr = np.reshape(x_mtr, [64,600,84*84*3])
-      self.x_mte = np.reshape(x_mte, [20,600,84*84*3])
-    else:
-      raise ValueError('No such dataset %s' % args.dataset)
-
   def generate_episode(self, args, meta_training=True, n_episodes=1, classes=None):
     generate_label = lambda way, n_samp: np.repeat(np.eye(way), n_samp, axis=0)
     n_way, n_shot, n_query = args.num_classes, args.num_samples, args.num_query

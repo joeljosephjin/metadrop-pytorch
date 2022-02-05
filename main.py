@@ -8,9 +8,7 @@ from model import MetaLearner
 from model import Net
 from model import phiNet
 from data.dataloader import split_omniglot_characters
-from data.dataloader import load_imagenet_images
 from data.dataloader import OmniglotTask
-from data.dataloader import ImageNetTask
 from data.dataloader import fetch_dataloaders
 from evaluate import evaluate
 from evaluate import accuracy
@@ -18,6 +16,7 @@ from evaluate import accuracy
 import numpy as np
 
 from time import time
+from tqdm import tqdm
 
 from data_haebom.data import Data
 
@@ -68,17 +67,13 @@ def train_and_evaluate(models,
 
     data = Data(args)
 
-    for episode in range(args.num_episodes):
+    for episode in tqdm(range(args.num_episodes)):
         # Run inner loops to get adapted parameters (theta_t`)
         data_episode = data.generate_episode(args, meta_training=True, n_episodes=num_inner_tasks)
         meta_loss = 0
         accs = []
         xtr, ytr, xte, yte = data_episode
         for n_task in range(num_inner_tasks):
-            # task = task_type(meta_train_classes, num_classes, num_samples, num_query)
-            # dataloaders = fetch_dataloaders(['train', 'test', 'meta'], task)
-            # dl_sup = dataloaders['train']
-            # X_sup, Y_sup = dl_sup.__iter__().next()
 
             xtri, ytri, xtei, ytei = xtr[n_task], ytr[n_task], xte[n_task], yte[n_task]
             X_sup, Y_sup = xtri, ytri
@@ -127,23 +122,6 @@ def train_and_evaluate(models,
         if args.phi:
             phi_optimizer.step()
 
-        # Evaluate model on new task
-        # Evaluate on train and test dataset given a number of tasks (args.num_steps)
-        if (episode + 1) % args.save_summary_steps == 0:
-            train_loss, train_acc = evaluate(models, loss_fn, meta_train_classes,
-                            task_lr, task_type, args,
-                            'train')
-            test_loss, test_acc = evaluate(models, loss_fn, meta_test_classes,
-                                    task_lr, task_type, args,
-                                    'test')
-
-            if args.wandb:
-                wandb.log({"episode":episode, "test_acc":test_acc, "train_acc":train_acc,\
-                            "test_loss":test_loss,"train_loss":train_loss})
-            print('episode: {:0.2f}, acc: {:0.2f}, test_acc: {:0.2f}, train_acc: {:0.2f}, time: {:0.2f}, test_loss: {:0.2f}, train_loss: {:0.2f}'\
-                    .format(episode, np.mean(accs), test_acc, train_acc, time()-start_time, test_loss, train_loss))
-            start_time = time()
-
 if __name__ == '__main__':
     args = parser.parse_args()
 
@@ -156,16 +134,15 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
 
+    # if 'Omniglot' in args.data_dir and args.dataset == 'Omniglot':
+    #     args.in_channels = 1
+    #     meta_train_classes, meta_test_classes = split_omniglot_characters(args.data_dir, args.seed)
+    #     task_type = OmniglotTask
+
     if 'Omniglot' in args.data_dir and args.dataset == 'Omniglot':
         args.in_channels = 1
-        meta_train_classes, meta_test_classes = split_omniglot_characters(args.data_dir, args.seed)
-        task_type = OmniglotTask
-    elif ('miniImageNet' in args.data_dir or 'tieredImageNet' in args.data_dir) and args.dataset == 'ImageNet':
-        args.in_channels = 3
-        meta_train_classes, meta_test_classes = load_imagenet_images(args.data_dir)
-        task_type = ImageNetTask
-    else:
-        raise ValueError("I don't know your dataset")
+        meta_train_classes, meta_test_classes = None, None
+        task_type = None
 
     model = MetaLearner(args).to(args.device)
     loss_fn = nn.NLLLoss()
