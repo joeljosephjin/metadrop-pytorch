@@ -7,6 +7,12 @@ Unofficial PyTorch Implementation of "Meta Dropout: Learning to Perturb Latent F
 To Run:
 `python main.py --phi`
 
+To Run MAML:
+`python main.py`
+
+To get the data:
+`python data_haebom/get_data.py`
+
 ## Results
 
 |       | Omni. 1shot (main paper)| Omni. 1shot (Ours)|
@@ -15,3 +21,11 @@ To Run:
 | Meta-dropout | __96.63__ | __97.12__ |
 
 See the [runs](https://wandb.ai/joeljosephjin/metadrop-pytorch) and [report](https://wandb.ai/joeljosephjin/metadrop-pytorch/reports/Metadrop-in-PyTorch-An-Evaluation--Vmlldzo5OTQwMjg) on the results.
+
+
+## To Install
+`conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch`
+
+## To Do
+- develop the 'minimal' branch
+- set a smaller runtime that can still track performance, so as to develop/debug faster
