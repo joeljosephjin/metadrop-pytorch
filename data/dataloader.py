@@ -6,6 +6,10 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms as transforms
+import torch
+
+# torch.manual_seed(0)
+# torch.cuda.manual_seed(0)
 
 # Define a training image loader for Omniglot that specifies transforms on images.
 train_transformer_Omniglot = transforms.Compose([

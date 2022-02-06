@@ -3,6 +3,9 @@ from tqdm import tqdm
 import requests
 import argparse
 
+# torch.manual_seed(0)
+# torch.cuda.manual_seed(0)
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str,
     choices=['omniglot', 'mimgnet'], default='omniglot')

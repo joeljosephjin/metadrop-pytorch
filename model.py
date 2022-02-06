@@ -7,6 +7,9 @@ import torch.nn.functional as F
 from torch.distributions.normal import Normal
 import numpy as np
 
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+
 N_FILTERS = 64  # number of filters used in conv_block
 K_SIZE = 3  # size of kernel
 MP_SIZE = 2  # size of max pooling

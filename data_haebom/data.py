@@ -1,6 +1,11 @@
 import numpy as np
 from torch import tensor
 
+# import torch
+# torch.manual_seed(0)
+# torch.cuda.manual_seed(0)
+
+
 class Data:
   def __init__(self, args):
     if args.dataset == 'Omniglot':

@@ -4,19 +4,20 @@ from collections import OrderedDict
 
 import torch
 import torch.nn as nn
-from model import MetaLearner
-from model import Net
-from model import phiNet
-from data.dataloader import split_omniglot_characters
-from data.dataloader import OmniglotTask
-from data.dataloader import fetch_dataloaders
-from evaluate import evaluate
-from evaluate import accuracy
+
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
 
 import numpy as np
+np.random.seed(0)
 
-from time import time
+print('tensor:', torch.rand([1,2]))
+
+from model import MetaLearner
+from evaluate import accuracy
+
 from tqdm import tqdm
+from statistics import mean
 
 from data_haebom.data import Data
 
@@ -28,7 +29,7 @@ parser.add_argument('--seed',default=1)
 parser.add_argument('--dataset',default="Omniglot")
 parser.add_argument('--meta_lr',default=1e-3, type=float)
 parser.add_argument('--task_lr',default=1e-1, type=float)
-parser.add_argument('--num_episodes',default=10000, type=int)
+parser.add_argument('--num_episodes',default=8, type=int)
 parser.add_argument('--num_classes',default=5, type=int)
 parser.add_argument('--num_samples',default=1, type=int)
 parser.add_argument('--num_query',default=10, type=int)
@@ -49,13 +50,8 @@ def train_and_evaluate(models,
                        meta_optimizer,
                        loss_fn,
                        args):
-    if args.wandb:
-        wandb.init(project='metadrop-pytorch', entity='joeljosephjin', config=vars(args))
 
     model = models['model']
-    if args.phi:
-        phi_net = models['phi_net']
-        phi_optimizer = models['phi_optimizer']
 
     # params information
     num_classes = args.num_classes
@@ -67,7 +63,8 @@ def train_and_evaluate(models,
 
     data = Data(args)
 
-    for episode in tqdm(range(args.num_episodes)):
+    # for episode in tqdm(range(args.num_episodes)):
+    for episode in range(args.num_episodes):
         # Run inner loops to get adapted parameters (theta_t`)
         data_episode = data.generate_episode(args, meta_training=True, n_episodes=num_inner_tasks)
         meta_loss = 0
@@ -80,64 +77,38 @@ def train_and_evaluate(models,
             X_sup, Y_sup = X_sup.reshape([-1, 1, 28, 28]).to(args.device), Y_sup.to(args.device) # [5, 784]
 
             adapted_params = model.cloned_state_dict()
-            if args.phi:
-                phi_adapted_params = phi_net.cloned_state_dict()
 
             for _ in range(0, args.num_train_updates):
-                if args.phi:
-                    Y_sup_hat = model(X_sup, adapted_params, phi_adapted_params)
-                else:
-                    Y_sup_hat = model(X_sup, adapted_params)
+                Y_sup_hat = model(X_sup, adapted_params)
                 loss = loss_fn(Y_sup_hat, torch.argmax(Y_sup, dim=1))
 
                 grads = torch.autograd.grad(loss, adapted_params.values(), create_graph=True)
                 for (key, val), grad in zip(adapted_params.items(), grads):
                     adapted_params[key] = val - task_lr * grad
 
-            # dl_meta = dataloaders['meta']
-            # X_meta, Y_meta = dl_meta.__iter__().next()
-            # X_meta, Y_meta = X_meta.to(args.device), Y_meta.to(args.device)
-
             X_meta, Y_meta = xtei, ytei
             X_meta, Y_meta = X_meta.reshape([-1, 1, 28, 28]).to(args.device), Y_meta.to(args.device) # [5, 784]
 
-            if args.phi:
-                Y_meta_hat = model(X_meta, adapted_params, phi_adapted_params)
-            else:
-                Y_meta_hat = model(X_meta, adapted_params)
+            Y_meta_hat = model(X_meta, adapted_params)
 
             accs.append(accuracy(Y_meta_hat.data.cpu().numpy(), torch.argmax(Y_meta, dim=1).data.cpu().numpy()))
             loss_t = loss_fn(Y_meta_hat, torch.argmax(Y_meta, dim=1))
 
             meta_loss += loss_t
-            
+
         meta_loss /= float(num_inner_tasks)
 
         meta_optimizer.zero_grad()
-        if args.phi:
-            phi_optimizer.zero_grad()
         meta_loss.backward()
         meta_optimizer.step()
 
-        if args.phi:
-            phi_optimizer.step()
+        print('episode:', episode, 'accs (mean of tasks):', mean(accs))
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    if args.wandb:
-        import wandb
-
-
     args.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
-
-    # if 'Omniglot' in args.data_dir and args.dataset == 'Omniglot':
-    #     args.in_channels = 1
-    #     meta_train_classes, meta_test_classes = split_omniglot_characters(args.data_dir, args.seed)
-    #     task_type = OmniglotTask
 
     if 'Omniglot' in args.data_dir and args.dataset == 'Omniglot':
         args.in_channels = 1
@@ -147,15 +118,8 @@ if __name__ == '__main__':
     model = MetaLearner(args).to(args.device)
     loss_fn = nn.NLLLoss()
 
-    # args.phi = False
-
     meta_optimizer = torch.optim.Adam(model.parameters(), lr=args.meta_lr)
 
-    if args.phi:
-        phi_net = phiNet(args.in_channels, args.num_classes, dataset=args.dataset).to(args.device)
-        phi_optimizer = torch.optim.Adam(phi_net.parameters(), lr=args.meta_lr)
-        models = {'model':model, 'phi_net':phi_net, 'phi_optimizer':phi_optimizer}
-    else:
-        models = {'model':model}
+    models = {'model':model}
 
     train_and_evaluate(models, meta_train_classes, meta_test_classes, task_type, meta_optimizer, loss_fn, args)
